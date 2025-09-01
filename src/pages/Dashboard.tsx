@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { Link } from "react-router-dom";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 
-type Row = { id:string; movement_type:string; score:number; feedback:string; created_at:string; media_url:string; analysis?: { coverage?: number; metrics?: Record<string, number>; notes?: string[] }; };
+type Row = { id:string; movement_type:string; score:number; feedback:string; created_at:string; media_url:string; analysis?: { coverage?: number; metrics?: Record<string, number> } };
 
 export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -44,35 +44,17 @@ export default function Dashboard() {
     if (!confirm("Delete this assessment?")) return;
     setErr("");
     setBusyId(r.id);
-
-    // 1) Try to delete object; if it 404s, continue
     const { error: delObjErr } = await supabase.storage.from("assessments").remove([r.media_url]);
-    if (delObjErr && !/not.*found/i.test(delObjErr.message)) {
-      setBusyId(null);
-      setErr(delObjErr.message);
-      return;
-    }
-
-    // 2) Delete DB row
+    if (delObjErr && !/not.*found/i.test(delObjErr.message)) { setBusyId(null); setErr(delObjErr.message); return; }
     const { error: delRowErr } = await supabase.from("assessments").delete().eq("id", r.id);
-    if (delRowErr) {
-      setBusyId(null);
-      setErr(delRowErr.message);
-      return;
-    }
-
-    // 3) Update UI
+    if (delRowErr) { setBusyId(null); setErr(delRowErr.message); return; }
     setRows(prev => prev.filter(x => x.id !== r.id));
-    setSigned(prev => {
-      const n = { ...prev };
-      delete n[r.id];
-      return n;
-    });
+    setSigned(prev => { const n = { ...prev }; delete n[r.id]; return n; });
     setBusyId(null);
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-semibold">Dashboard</h1>
@@ -85,7 +67,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="h-64 border rounded p-3">
+      <div className="h-48 sm:h-64 border rounded p-3">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chart}>
             <XAxis dataKey="date" />
@@ -101,29 +83,26 @@ export default function Dashboard() {
 
       <div className="space-y-3">
         {rows.map(r => (
-          <div key={r.id} className="border rounded p-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-            <div>
-              <div className="font-medium">{r.movement_type} • Score {r.score}</div>
-              <div className="text-sm text-gray-600">{new Date(r.created_at).toLocaleString()}</div>
+          <div key={r.id} className="border rounded p-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="min-w-0">
+              <div className="font-medium truncate">{r.movement_type} • Score {r.score}</div>
+              <div className="text-xs sm:text-sm text-gray-600">{new Date(r.created_at).toLocaleString()}</div>
               <div className="text-sm">{r.feedback}</div>
               {r.analysis && (
                 <div className="text-xs text-gray-600 mt-1">
-                coverage {typeof r.analysis.coverage === "number" ? r.analysis.coverage : "-"} • {JSON.stringify(r.analysis.metrics || {})}</div>
-)}
+                  coverage {typeof r.analysis.coverage === "number" ? r.analysis.coverage : "-"} • {JSON.stringify(r.analysis.metrics || {})}
+                </div>
+              )}
               <div className="mt-2">
-                <button
-                  onClick={() => onDelete(r)}
-                  disabled={busyId === r.id}
-                  className="rounded border px-3 py-2 disabled:opacity-50"
-                >
+                <button onClick={() => onDelete(r)} disabled={busyId === r.id} className="rounded border px-3 py-2 text-sm disabled:opacity-50">
                   {busyId === r.id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
-            <div className="justify-self-end">
+            <div className="justify-self-end w-full sm:w-auto">
               {signed[r.id] && (signed[r.id].includes(".webm")
-                ? <video src={signed[r.id]} controls className="w-48 rounded border" />
-                : <img src={signed[r.id]} className="w-48 rounded border" />)}
+                ? <video src={signed[r.id]} controls className="w-full sm:w-48 rounded border" />
+                : <img src={signed[r.id]} className="w-full sm:w-48 rounded border" />)}
             </div>
           </div>
         ))}
