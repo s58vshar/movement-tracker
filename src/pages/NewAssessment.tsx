@@ -235,15 +235,6 @@ export default function NewAssessment() {
           </div>
         </div>
       </div>
-
-      <div className="fixed bottom-[max(env(safe-area-inset-bottom),12px)] left-0 right-0 z-30 md:hidden">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="rounded-xl shadow-lg bg-white border p-2 flex gap-2">
-            <button onClick={save} disabled={!previewUrl || busy} className="flex-1 rounded bg-black text-white py-3">{busy ? "Saving..." : "Save"}</button>
-            <button onClick={() => { setPreviewUrl(u => { if (u) URL.revokeObjectURL(u); return null; }); setPreviewMime(undefined); }} disabled={!previewUrl || busy} className="rounded border px-4 py-3">Clear</button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
